@@ -461,10 +461,16 @@ input { font: inherit; }
 
 .home-inner { display: flex; flex-direction: column; gap: 14px; max-width: 980px; margin: 0 auto; }
 
+.home-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+}
 .all-games {
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
   gap: 7px;
   padding: 7px 12px;
   border-radius: 10px;

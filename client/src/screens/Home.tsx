@@ -1,5 +1,5 @@
 // Accueil : le titre, une petite scène qui montre le principe, un prénom, et on crée ou on rejoint une table.
-import { ArrowRight, BookOpen, House, LogIn, Plus } from 'lucide-react';
+import { ArrowRight, BookOpen, House, MessageSquare, LogIn, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Easel, Logo } from '../components/Ui';
 import { cls, reducedMotion, useThemeColor } from '../lib/util';
@@ -86,9 +86,14 @@ export function Home() {
   return (
     <div className="screen home">
       <div className="home-inner">
-        <a className="all-games" href="https://akhis-games.onrender.com">
-          <House size={16} aria-hidden /> Tous les jeux
-        </a>
+        <div className="home-links">
+          <a className="all-games" href="https://akhis-games.onrender.com">
+            <House size={16} aria-hidden /> Tous les jeux
+          </a>
+          <a className="all-games" href="https://akhis-games.onrender.com/feedback.html?jeu=justone">
+            <MessageSquare size={16} aria-hidden /> Feedback
+          </a>
+        </div>
         <div className="home-grid">
           <header className="home-hero">
             <Logo size="lg" />
