@@ -2,7 +2,7 @@
 
 **Un mot à faire deviner. Un indice chacun. Sans avoir la même idée que les autres.**
 
-👉 **Jouer : https://just-one.onrender.com** (la première ouverture peut prendre jusqu'à une minute, le temps que le serveur gratuit se réveille)
+👉 **Jouer : https://just-one-3bg0.onrender.com** (la première ouverture peut prendre jusqu'à une minute, le temps que le serveur gratuit se réveille)
 
 Jeu coopératif multijoueur en ligne, à jouer entre amis depuis un navigateur, sur téléphone ou ordinateur, sans compte ni installation.
 D'après *Just One* de Ludovic Roudy et Bruno Sautter (Repos Production ; projet de fans, non officiel, avec ses propres visuels et sa propre liste de mots).
