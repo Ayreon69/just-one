@@ -1,0 +1,11 @@
+{
+  "name": "Just One",
+  "short_name": "Just One",
+  "description": "Un mot à faire deviner, un indice chacun, et les indices identiques s'effacent.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2346f5",
+  "theme_color": "#2346f5",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
