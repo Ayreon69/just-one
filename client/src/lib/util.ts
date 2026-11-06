@@ -25,6 +25,19 @@ export function useTick(ms = 250): number {
   return now;
 }
 
+/**
+ * Faux tant que l'écran repéré par `key` vient d'apparaître. Les boutons d'une nouvelle étape attendent un peu :
+ * quand deux joueurs touchent presque ensemble, l'appui du second ne tombe pas sur le bouton suivant.
+ */
+export function useSettled(key: unknown, ms: number): boolean {
+  const [settled, setSettled] = useState<unknown>(null);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSettled(key), ms);
+    return () => window.clearTimeout(t);
+  }, [key, ms]);
+  return settled === key;
+}
+
 export function secondsLeft(endsAt: number, now: number): number {
   return Math.max(0, Math.ceil((endsAt - now) / 1000));
 }

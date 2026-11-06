@@ -29,6 +29,8 @@ const MAX_MEMBERS = 16;
 const FAST = process.env.JO_FAST === '1';
 /** Délai laissé à un joueur déconnecté avant qu'on ne l'attende plus. */
 const GRACE_MS = FAST ? 600 : 20_000;
+/** Une étape qui vient de s'afficher ignore les appuis pendant ce temps : ils visaient l'écran d'avant. L'appli attend un peu plus. */
+const HOLD_MS = 600;
 
 export interface Player {
   id: string;
@@ -68,6 +70,9 @@ export class Room {
   onChange: () => void = () => {};
 
   private timer: ReturnType<typeof setTimeout> | null = null;
+
+  /** Voir `HOLD_MS` ; les tests de la table le mettent à 0 pour jouer d'une traite. */
+  holdMs = FAST ? 0 : HOLD_MS;
 
   constructor(code: string) {
     this.code = code;
@@ -245,6 +250,7 @@ export class Room {
       isAway: (id) => this.isAway(this.get(id)),
       drawWord: () => this.drawWord(),
       writeMs: FAST && t ? 1_500 : t * 1000,
+      holdMs: this.holdMs,
     });
     this.final = null;
     this.game.deal();
@@ -331,15 +337,17 @@ export class Room {
     return fn(this.game);
   }
 
-  force(by: string): string | undefined {
+  force(by: string, stage?: unknown): string | undefined {
     if (by !== this.hostId) return "Seul l'hôte peut ne plus attendre.";
-    return this.act((g) => g.force());
+    return this.act((g) => g.force(stage));
   }
 
   /** L'hôte passe la carte au suivant : celui qui devine n'est plus là. Aucune carte n'est perdue. */
-  skip(by: string): string | undefined {
+  skip(by: string, n?: unknown): string | undefined {
     if (by !== this.hostId) return "Seul l'hôte peut passer la main.";
     return this.act((g) => {
+      // Un second appui sur « Passer au suivant » ne doit pas sauter aussi la carte d'après.
+      if (n !== undefined && n !== g.card?.n) return undefined;
       if (g.card?.stage !== 'result') g.deal();
       return undefined;
     });

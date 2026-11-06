@@ -1,12 +1,18 @@
 // La partie : un écran par étape de la carte, et par rôle. Celui qui devine reste dans le noir jusqu'à pouvoir répondre.
 import { ArrowRight, BookOpen, Check, ChevronRight, Copy, Forward, LogOut, Menu, Pencil, Send, Volume2, VolumeX, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { CLUE_MAX, ANSWER_MAX, EMOTES, clueProblem, clueTooClose, closeWords, type ClueView, type GameView, type Outcome, type PlayerView, type RoomView, type RoundView } from '../../../shared/protocol';
 import { Button, ConfirmButton, Dot, Easel, Modal, WordBoard, markerVar } from '../components/Ui';
 import { sfx } from '../lib/sound';
-import { cls, listNames, secondsLeft, shareUrl, useThemeColor, useTick, useWakeLock, vibrate } from '../lib/util';
+import { cls, listNames, secondsLeft, shareUrl, useSettled, useThemeColor, useTick, useWakeLock, vibrate } from '../lib/util';
 import { leaveRoom, send, socket } from '../net';
 import { useStore } from '../store';
+
+/** Le temps que les boutons d'une étape qui vient d'apparaître restent sourds (un peu plus que le serveur, qui en ignore 600 ms). */
+const SETTLE_MS = { check: 700, guess: 900, result: 1200 };
+
+/** La durée du remplissage d'un bouton qui attend (voir `.is-settling`). */
+const settleVar = (ms: number) => ({ '--settle': `${ms}ms` }) as CSSProperties;
 
 const TONE: Record<string, string> = { day: '#2346f5', night: '#0c1238', found: '#07885a', missed: '#d63a30', passed: '#47527a', empty: '#47527a' };
 
@@ -197,7 +203,7 @@ function WaitingFor({ view, round }: { view: RoomView; round: RoundView }) {
       </div>
       <p className="writers-text">{missing.length === 0 ? 'Tout le monde a écrit !' : onlyMe ? 'On n’attend plus que toi !' : missing.length === 1 ? `${players.name(missing[0])} écrit encore…` : `${missing.length} joueurs écrivent encore…`}</p>
       {isHost && !onlyMe && missing.length > 0 && someone && (
-        <ConfirmButton variant="ghost" className="on-color" confirm="Sûr ? On continue sans eux" onConfirm={() => void send('game:force')}>
+        <ConfirmButton variant="ghost" className="on-color" confirm="Sûr ? On continue sans eux" onConfirm={() => void send('game:force', { stage: round.stage })}>
           Ne plus attendre
         </ConfirmButton>
       )}
@@ -296,7 +302,7 @@ function NightStage({ view, game }: { view: RoomView; game: GameView }) {
         })}
       </div>
       {isHost && missing.length > 0 && (r.stage === 'check' || r.written.length > 0) && (
-        <ConfirmButton variant="ghost" className="on-color" confirm="Sûr ? On continue sans eux" onConfirm={() => void send('game:force')}>
+        <ConfirmButton variant="ghost" className="on-color" confirm="Sûr ? On continue sans eux" onConfirm={() => void send('game:force', { stage: r.stage })}>
           Ne plus attendre {listNames(missing.map((id) => players.name(id)))}
         </ConfirmButton>
       )}
@@ -325,6 +331,7 @@ function CheckStage({ view, game }: { view: RoomView; game: GameView }) {
   const ready = r.ready.includes(view.me);
   const waiting = r.givers.filter((id) => !r.ready.includes(id) && !players.get(id)?.away);
   const allGone = r.clues.every((c) => c.cancelled);
+  const settled = useSettled(r.n, SETTLE_MS.check);
   return (
     <>
       <WordBoard word={r.word ?? ''} compact label="Le mot" />
@@ -350,12 +357,12 @@ function CheckStage({ view, game }: { view: RoomView; game: GameView }) {
               <span className="spinner" /> {waiting.length ? `On attend ${listNames(waiting.map((id) => players.name(id)))}…` : 'C’est parti…'}
             </p>
           ) : (
-            <Button variant="primary" className="btn-lg btn-wide" icon={<Check size={22} />} onClick={() => void send('game:ok')}>
+            <Button variant="primary" className={cls('btn-lg btn-wide', !settled && 'is-settling')} icon={<Check size={22} />} disabled={!settled} style={settleVar(SETTLE_MS.check)} onClick={() => void send('game:ok')}>
               {allGone ? 'Tout est effacé : carte perdue' : `C'est bon, on montre à ${players.name(r.guesser)}`}
             </Button>
           ))}
         {isHost && ready && waiting.length > 0 && (
-          <ConfirmButton variant="ghost" className="on-color" confirm="Sûr ? On continue sans eux" onConfirm={() => void send('game:force')}>
+          <ConfirmButton variant="ghost" className="on-color" confirm="Sûr ? On continue sans eux" onConfirm={() => void send('game:force', { stage: r.stage })}>
             Ne plus attendre
           </ConfirmButton>
         )}
@@ -411,6 +418,7 @@ function GuessStage({ view, game }: { view: RoomView; game: GameView }) {
   const oral = view.settings.answer === 'oral';
   const guesser = players.name(r.guesser);
   const sorted = [...r.clues].sort((a, b) => Number(!!a.cancelled) - Number(!!b.cancelled));
+  const settled = useSettled(r.seq, SETTLE_MS.guess);
 
   if (r.role === 'guesser') {
     return (
@@ -437,14 +445,14 @@ function GuessStage({ view, game }: { view: RoomView; game: GameView }) {
       {oral && (
         <div className="bottom-bar">
           <div className="verdict">
-            <Button variant="bad" className="btn-lg" icon={<X size={22} />} onClick={() => void send('game:verdict', { outcome: 'missed', seq: r.seq })}>
+            <Button variant="bad" className={cls('btn-lg', !settled && 'is-settling')} icon={<X size={22} />} disabled={!settled} style={settleVar(SETTLE_MS.guess)} onClick={() => void send('game:verdict', { outcome: 'missed', seq: r.seq })}>
               Raté
             </Button>
-            <Button variant="good" className="btn-lg" icon={<Check size={22} />} onClick={() => void send('game:verdict', { outcome: 'found', seq: r.seq })}>
+            <Button variant="good" className={cls('btn-lg', !settled && 'is-settling')} icon={<Check size={22} />} disabled={!settled} style={settleVar(SETTLE_MS.guess)} onClick={() => void send('game:verdict', { outcome: 'found', seq: r.seq })}>
               Trouvé !
             </Button>
           </div>
-          <ConfirmButton variant="ghost" className="on-color" confirm={`Sûr ? ${guesser} passe`} onConfirm={() => void send('game:verdict', { outcome: 'passed', seq: r.seq })}>
+          <ConfirmButton variant="ghost" className="on-color" disabled={!settled} confirm={`Sûr ? ${guesser} passe`} onConfirm={() => void send('game:verdict', { outcome: 'passed', seq: r.seq })}>
             {guesser} passe
           </ConfirmButton>
         </div>
@@ -485,6 +493,7 @@ function ResultStage({ view, game }: { view: RoomView; game: GameView }) {
   const canCorrect = (outcome === 'found' || outcome === 'missed') && (r.role !== 'guesser' || isHost);
   const next = r.nextGuesser;
   const line = penaltyLine(r);
+  const settled = useSettled(r.seq, SETTLE_MS.result);
   return (
     <>
       <h2 className="headline" key={outcome}>
@@ -498,14 +507,14 @@ function ResultStage({ view, game }: { view: RoomView; game: GameView }) {
       )}
       {line && <p className="result-line">{line}</p>}
       {canCorrect && (
-        <button type="button" className="link on-color" onClick={() => void send('game:correct', { outcome: outcome === 'found' ? 'missed' : 'found' })}>
+        <button type="button" className="link on-color" disabled={!settled} onClick={() => void send('game:correct', { outcome: outcome === 'found' ? 'missed' : 'found', seq: r.seq })}>
           {outcome === 'found' ? 'Oups : en fait, c’était raté' : 'Oups : en fait, c’était bon'}
         </button>
       )}
       {r.clues.length > 0 && <EaselGrid clues={r.clues} view={view} spent />}
       <Reactions />
       <div className="bottom-bar">
-        <Button variant="primary" className="btn-lg btn-wide" icon={over ? undefined : <ArrowRight size={22} />} onClick={() => void send('game:next', { seq: r.seq })}>
+        <Button variant="primary" className={cls('btn-lg btn-wide', !settled && 'is-settling')} icon={over ? undefined : <ArrowRight size={22} />} disabled={!settled} style={settleVar(SETTLE_MS.result)} onClick={() => void send('game:next', { seq: r.seq })}>
           {over ? 'Voir le score' : 'Carte suivante'}
         </Button>
         {!over && next && <p className="bottom-note">{next === view.me ? 'C’est toi qui devines ensuite.' : `${players.name(next)} devine ensuite.`}</p>}
@@ -594,7 +603,7 @@ export function Table({ view }: { view: RoomView }) {
         <div className="away-banner" role="status">
           <span>{players.name(r.guesser)} ne répond plus.</span>
           {isHost && (
-            <Button className="btn-sm" icon={<ChevronRight size={16} />} onClick={() => void send('game:skip')}>
+            <Button className="btn-sm" icon={<ChevronRight size={16} />} onClick={() => void send('game:skip', { n: r.n })}>
               Passer au suivant
             </Button>
           )}

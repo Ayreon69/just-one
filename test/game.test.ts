@@ -318,6 +318,63 @@ describe('la réponse', () => {
     expect(game.records).toHaveLength(1);
   });
 
+  it('un appui en retard ne saute pas le résultat', () => {
+    // Le second « Trouvé ! » part juste après le premier : son téléphone a déjà reçu l'écran du résultat,
+    // et l'appui tombe sur « Carte suivante », au même endroit.
+    const { game, clock, deps } = setup();
+    deps.holdMs = 600;
+    writeAll(game);
+    okAll(game);
+    clock.now += 600;
+    const c = game.card!;
+    game.verdict(c.givers[0], 'found', c.seq);
+    expect(c.stage).toBe('result');
+    clock.now += 150;
+    expect(game.next(c.seq)).toBeUndefined();
+    expect(game.card).toBe(c);
+    expect(c.stage).toBe('result');
+    clock.now += 450;
+    game.next(c.seq);
+    expect(game.card).not.toBe(c);
+  });
+
+  it('un appui en retard ne valide pas une réponse que personne n’a encore dite', () => {
+    const { game, clock, deps } = setup();
+    deps.holdMs = 600;
+    writeAll(game);
+    okAll(game);
+    const c = game.card!;
+    expect(c.stage).toBe('guess');
+    clock.now += 100;
+    game.verdict(c.givers[0], 'found', c.seq);
+    expect(c.stage).toBe('guess');
+    clock.now += 500;
+    game.verdict(c.givers[0], 'found', c.seq);
+    expect(c.stage).toBe('result');
+  });
+
+  it('« Ne plus attendre » ne vaut que pour l’étape que l’hôte voyait', () => {
+    const { game } = setup();
+    const c = game.card!;
+    game.write(c.givers[0], 0, 'Indice');
+    game.force('write');
+    expect(c.stage).toBe('check');
+    game.force('write');
+    expect(c.stage).toBe('check');
+    game.force('check');
+    expect(c.stage).toBe('guess');
+  });
+
+  it('une rectification en retard ne touche pas une autre carte', () => {
+    const { game } = setup();
+    playCard(game, 'found');
+    const c = game.card!;
+    expect(game.correct(c.givers[0], false, 'missed', c.seq - 1)).toBeUndefined();
+    expect(c.outcome).toBe('found');
+    game.correct(c.givers[0], false, 'missed', c.seq);
+    expect(c.outcome).toBe('missed');
+  });
+
   it('à l’écrit, l’appli compare, et la table peut rectifier', () => {
     const { game } = setup(['a', 'b', 'c', 'd'], { answer: 'written' }, ['Baleine', 'Autre']);
     writeAll(game);
@@ -451,6 +508,7 @@ describe('la pioche', () => {
 describe('la table', () => {
   function table(n: number): { room: Room; ids: string[] } {
     const room = new Room('ABCD');
+    room.holdMs = 0;
     const ids: string[] = [];
     for (let i = 0; i < n; i++) {
       const p = room.addHuman(`J${i}`);

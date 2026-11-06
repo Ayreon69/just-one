@@ -40,6 +40,8 @@ export interface Card {
   penalty: Penalty;
   swap: { by: string; n: number } | null;
   seq: number;
+  /** Quand l'étape en cours s'est affichée : un appui trop tôt visait l'écran d'avant. */
+  shownAt: number;
 }
 
 export interface CardRecord {
@@ -59,6 +61,11 @@ export interface GameDeps {
   isAway: (id: string) => boolean;
   drawWord: () => string;
   writeMs: number;
+  /**
+   * Le temps pendant lequel une étape qui vient d'apparaître ignore « Trouvé / Raté » et « Carte suivante ».
+   * Deux joueurs touchent presque ensemble : sans ce délai, l'appui du second tombe sur le bouton de l'étape suivante.
+   */
+  holdMs?: number;
   now?: () => number;
 }
 
@@ -83,6 +90,11 @@ export class Game {
 
   private now(): number {
     return this.deps.now ? this.deps.now() : Date.now();
+  }
+
+  /** L'étape vient d'apparaître : un appui maintenant visait celle d'avant. */
+  private tooSoon(c: Card): boolean {
+    return this.now() - c.shownAt < (this.deps.holdMs ?? 0);
   }
 
   // ───────────────────────────── Le décompte ─────────────────────────────
@@ -170,6 +182,7 @@ export class Game {
       penalty: null,
       swap: null,
       seq: ++this.seq,
+      shownAt: this.now(),
     };
   }
 
@@ -268,12 +281,14 @@ export class Game {
     if (c.clues.every((x) => x.cancelled)) return this.finish('empty');
     c.stage = 'guess';
     c.seq = ++this.seq;
+    c.shownAt = this.now();
   }
 
   /** L'hôte n'attend plus un joueur distrait. */
-  force(): string | undefined {
+  force(stage?: unknown): string | undefined {
     const c = this.card;
-    if (!c) return undefined;
+    // L'écran de l'hôte montrait une autre étape : son appui est arrivé trop tard.
+    if (!c || (stage !== undefined && stage !== c.stage)) return undefined;
     if (c.stage === 'write') {
       if (![...c.texts.values()].some((mine) => mine.some(Boolean))) return "Personne n'a encore écrit.";
       this.toCheck();
@@ -286,7 +301,7 @@ export class Game {
   /** À voix haute : ceux qui connaissent le mot disent si c'est juste. */
   verdict(by: string, outcome: unknown, seq: unknown): string | undefined {
     const c = this.card;
-    if (!c || c.stage !== 'guess' || seq !== c.seq) return undefined;
+    if (!c || c.stage !== 'guess' || seq !== c.seq || this.tooSoon(c)) return undefined;
     if (by === c.guesser) return 'Ce sont les autres qui valident ta réponse.';
     if (this.deps.settings.answer !== 'oral') return 'La réponse se tape dans l’appli.';
     if (outcome !== 'found' && outcome !== 'missed' && outcome !== 'passed') return 'Verdict inconnu.';
@@ -318,6 +333,7 @@ export class Game {
     c.stage = 'result';
     c.outcome = outcome;
     c.seq = ++this.seq;
+    c.shownAt = this.now();
     this.records.push({ n: c.n, guesser: c.guesser, word: c.word, clues: c.clues, outcome, answer: c.answer, penalty: null });
     this.syncPenalty();
   }
@@ -330,9 +346,9 @@ export class Game {
   }
 
   /** La réponse a été mal jugée (« c'est le même mot ! ») : on rectifie avant de passer à la suite. */
-  correct(by: string, isHost: boolean, outcome: unknown): string | undefined {
+  correct(by: string, isHost: boolean, outcome: unknown, seq?: unknown): string | undefined {
     const c = this.card;
-    if (!c || c.stage !== 'result') return undefined;
+    if (!c || c.stage !== 'result' || (seq !== undefined && seq !== c.seq)) return undefined;
     if (by === c.guesser && !isHost) return 'Ce sont les autres qui valident ta réponse.';
     if (outcome !== 'found' && outcome !== 'missed') return 'Verdict inconnu.';
     if (c.outcome !== 'found' && c.outcome !== 'missed') return 'Cette carte ne se rectifie pas.';
@@ -344,7 +360,7 @@ export class Game {
 
   next(seq: unknown): string | undefined {
     const c = this.card;
-    if (!c || c.stage !== 'result' || seq !== c.seq) return undefined;
+    if (!c || c.stage !== 'result' || seq !== c.seq || this.tooSoon(c)) return undefined;
     this.deal();
     return undefined;
   }

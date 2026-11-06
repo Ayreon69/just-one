@@ -163,12 +163,12 @@ io.on('connection', (socket: Socket) => {
   on('game:swap', (room, playerId) => room.act((g) => g.swapWord(playerId)));
   on('game:erase', (room, playerId, payload) => room.act((g) => g.erase(playerId, payload.clue)));
   on('game:ok', (room, playerId) => room.act((g) => g.ok(playerId)));
-  on('game:force', (room, playerId) => room.force(playerId));
-  on('game:skip', (room, playerId) => room.skip(playerId));
+  on('game:force', (room, playerId, payload) => room.force(playerId, payload.stage));
+  on('game:skip', (room, playerId, payload) => room.skip(playerId, payload.n));
   on('game:verdict', (room, playerId, payload) => room.act((g) => g.verdict(playerId, payload.outcome, payload.seq)));
   on('game:answer', (room, playerId, payload) => room.act((g) => g.answer(playerId, payload.text)));
   on('game:pass', (room, playerId) => room.act((g) => g.pass(playerId)));
-  on('game:correct', (room, playerId, payload) => room.act((g) => g.correct(playerId, playerId === room.hostId, payload.outcome)));
+  on('game:correct', (room, playerId, payload) => room.act((g) => g.correct(playerId, playerId === room.hostId, payload.outcome, payload.seq)));
   on('game:next', (room, _playerId, payload) => room.act((g) => g.next(payload.seq)));
 
   socket.on('emote', (payload: Record<string, unknown> | undefined) => {

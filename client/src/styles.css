@@ -124,6 +124,22 @@ input { font: inherit; }
 .btn-ghost.is-armed { --face: rgba(255, 255, 255, 0.18); }
 .btn.is-armed:not(.btn-ghost) { --face: var(--encre); --edge: #000; --ink: #fff; }
 
+/* Le bouton d'une étape qui vient d'apparaître se remplit avant de répondre : un appui en retard ne saute pas l'étape. */
+.btn.is-settling { position: relative; overflow: hidden; }
+.btn.is-settling:disabled { opacity: 0.6; }
+.btn-primary.is-settling:disabled { --face: var(--fluo); --edge: var(--fluo-fonce); --ink: var(--encre); font-weight: 800; }
+.btn.is-settling::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 4px;
+  background: currentColor;
+  opacity: 0.45;
+  transform-origin: left;
+  animation: settle var(--settle, 1s) linear forwards;
+}
+@keyframes settle { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
 .btn-lg { min-height: 56px; padding: 12px 20px; font-size: 1.14rem; }
 .btn-sm { min-height: 34px; padding: 4px 12px; font-size: 0.9rem; box-shadow: 0 2px 0 var(--edge); }
 .btn-wide { width: 100%; }
