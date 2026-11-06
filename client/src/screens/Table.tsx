@@ -2,6 +2,7 @@
 import { ArrowRight, BookOpen, Check, ChevronRight, Copy, Forward, LogOut, Menu, Pencil, Send, Volume2, VolumeX, X } from 'lucide-react';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { CLUE_MAX, ANSWER_MAX, EMOTES, clueProblem, clueTooClose, closeWords, type ClueView, type GameView, type Outcome, type PlayerView, type RoomView, type RoundView } from '../../../shared/protocol';
+import { SheepGame } from '../components/Sheep';
 import { Button, ConfirmButton, Dot, Easel, Modal, WordBoard, markerVar } from '../components/Ui';
 import { sfx } from '../lib/sound';
 import { cls, listNames, secondsLeft, shareUrl, useSettled, useThemeColor, useTick, useWakeLock, vibrate } from '../lib/util';
@@ -290,6 +291,7 @@ function NightStage({ view, game }: { view: RoomView; game: GameView }) {
       <ClosedEye />
       <h2 className="night-title">{writing ? 'Yeux fermés !' : 'Ils comparent…'}</h2>
       <p className="night-text">{writing ? 'C’est toi qui devines. Les autres écrivent un indice sur un mot que tout le monde voit, sauf toi.' : 'Les indices pareils s’effacent. Il va te rester ceux qui survivent.'}</p>
+      <SheepGame onDone={(count) => void send('game:sheep', { n: r.n, count })} />
       <div className="night-boards">
         {r.givers.map((id) => {
           const done = writing ? r.written.includes(id) : r.ready.includes(id);
@@ -506,6 +508,11 @@ function ResultStage({ view, game }: { view: RoomView; game: GameView }) {
         </p>
       )}
       {line && <p className="result-line">{line}</p>}
+      {r.sheep > 0 && (
+        <p className="result-sheep">
+          Pendant ce temps, {r.role === 'guesser' ? 'tu as' : `${players.name(r.guesser)} a`} fait sauter <b>{r.sheep}</b> {r.sheep > 1 ? 'moutons' : 'mouton'}.
+        </p>
+      )}
       {canCorrect && (
         <button type="button" className="link on-color" disabled={!settled} onClick={() => void send('game:correct', { outcome: outcome === 'found' ? 'missed' : 'found', seq: r.seq })}>
           {outcome === 'found' ? 'Oups : en fait, c’était raté' : 'Oups : en fait, c’était bon'}
@@ -610,8 +617,10 @@ export function Table({ view }: { view: RoomView }) {
         </div>
       )}
       <main className="table-main">
-        {r.stage === 'write' && (r.role === 'guesser' ? <NightStage view={view} game={game} /> : <WriteStage view={view} game={game} />)}
-        {r.stage === 'check' && (r.role === 'guesser' ? <NightStage view={view} game={game} /> : <CheckStage view={view} game={game} />)}
+        {/* Une seule nuit de l'écriture à la comparaison : les moutons continuent de sauter. */}
+        {night && <NightStage key={r.n} view={view} game={game} />}
+        {r.stage === 'write' && r.role !== 'guesser' && <WriteStage view={view} game={game} />}
+        {r.stage === 'check' && r.role !== 'guesser' && <CheckStage view={view} game={game} />}
         {r.stage === 'guess' && <GuessStage key={r.seq} view={view} game={game} />}
         {r.stage === 'result' && <ResultStage view={view} game={game} />}
       </main>

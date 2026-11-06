@@ -169,6 +169,7 @@ io.on('connection', (socket: Socket) => {
   on('game:answer', (room, playerId, payload) => room.act((g) => g.answer(playerId, payload.text)));
   on('game:pass', (room, playerId) => room.act((g) => g.pass(playerId)));
   on('game:correct', (room, playerId, payload) => room.act((g) => g.correct(playerId, playerId === room.hostId, payload.outcome, payload.seq)));
+  on('game:sheep', (room, playerId, payload) => room.act((g) => g.sheep(playerId, payload.n, payload.count)));
   on('game:next', (room, _playerId, payload) => room.act((g) => g.next(payload.seq)));
 
   socket.on('emote', (payload: Record<string, unknown> | undefined) => {

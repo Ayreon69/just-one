@@ -106,6 +106,8 @@ export interface RoundView {
   answer: string | null;
   outcome: Outcome | null;
   penalty: Penalty;
+  /** Les moutons sautés par celui qui devine pendant que les autres écrivaient. Seulement au résultat. */
+  sheep: number;
 }
 
 export interface GameView {
@@ -135,6 +137,8 @@ export interface FinalView {
   soulmates: { a: string; b: string; count: number } | null;
   /** Un mot trouvé grâce à un seul indice. */
   solo: string | null;
+  /** Le plus de moutons sautés en une seule nuit. */
+  sheep: { name: string; count: number } | null;
 }
 
 export interface RoomView {

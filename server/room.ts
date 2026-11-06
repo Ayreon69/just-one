@@ -303,9 +303,16 @@ export class Room {
       })),
       soulmates: this.soulmates(g.records, name),
       solo: g.records.find((r) => r.outcome === 'found' && r.clues.length > 1 && r.clues.filter((c) => !c.cancelled).length === 1)?.word ?? null,
+      sheep: this.sheepChampion(g.records, name),
     };
     this.phase = 'finished';
     this.clearTimer();
+  }
+
+  /** Le plus de moutons sautés en une nuit ; le premier à l'avoir fait garde le titre. */
+  private sheepChampion(records: CardRecord[], name: (id: string) => string): FinalView['sheep'] {
+    const best = records.reduce<CardRecord | null>((top, r) => (r.sheep > (top?.sheep ?? 0) ? r : top), null);
+    return best ? { name: name(best.guesser), count: best.sheep } : null;
   }
 
   /** Les deux joueurs qui ont le plus souvent écrit la même chose : le clin d'œil de fin de partie. */
@@ -438,6 +445,7 @@ export class Room {
       answer: c.answer,
       outcome: c.outcome,
       penalty: c.penalty,
+      sheep: end ? c.sheep : 0,
     };
   }
 

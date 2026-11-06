@@ -42,6 +42,8 @@ export interface Card {
   seq: number;
   /** Quand l'étape en cours s'est affichée : un appui trop tôt visait l'écran d'avant. */
   shownAt: number;
+  /** Les moutons que celui qui devine a fait sauter, les yeux fermés. */
+  sheep: number;
 }
 
 export interface CardRecord {
@@ -52,7 +54,11 @@ export interface CardRecord {
   outcome: Outcome;
   answer: string | null;
   penalty: Penalty;
+  sheep: number;
 }
+
+/** Au-delà, ce n'est plus un mouton, c'est un téléphone trafiqué. */
+const MAX_SHEEP = 999;
 
 export interface GameDeps {
   settings: Settings;
@@ -183,6 +189,7 @@ export class Game {
       swap: null,
       seq: ++this.seq,
       shownAt: this.now(),
+      sheep: 0,
     };
   }
 
@@ -334,7 +341,7 @@ export class Game {
     c.outcome = outcome;
     c.seq = ++this.seq;
     c.shownAt = this.now();
-    this.records.push({ n: c.n, guesser: c.guesser, word: c.word, clues: c.clues, outcome, answer: c.answer, penalty: null });
+    this.records.push({ n: c.n, guesser: c.guesser, word: c.word, clues: c.clues, outcome, answer: c.answer, penalty: null, sheep: c.sheep });
     this.syncPenalty();
   }
 
@@ -355,6 +362,17 @@ export class Game {
     c.outcome = outcome;
     this.records[this.records.length - 1].outcome = outcome;
     this.syncPenalty();
+    return undefined;
+  }
+
+  /** Les yeux se rouvrent : celui qui devine dit combien de moutons il a fait sauter. Ça ne change rien au jeu. */
+  sheep(by: string, n: unknown, count: unknown): string | undefined {
+    const c = this.card;
+    if (!c || c.n !== n || by !== c.guesser) return undefined;
+    if (typeof count !== 'number' || !Number.isFinite(count)) return undefined;
+    c.sheep = Math.max(0, Math.min(MAX_SHEEP, Math.floor(count)));
+    const rec = this.records.find((r) => r.n === c.n);
+    if (rec) rec.sheep = c.sheep;
     return undefined;
   }
 

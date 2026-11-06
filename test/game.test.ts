@@ -627,6 +627,59 @@ describe('la table', () => {
     room.dispose();
   });
 
+  it('les moutons de celui qui devine : montrés au résultat, et le record à la fin', () => {
+    const { room, ids } = table(4);
+    room.start(ids[0]);
+    const g = room.game!;
+    const nights: [string, number][] = [];
+    for (const count of [12, 31, 7]) {
+      const c = g.card!;
+      const givers = c.givers;
+      for (const id of givers) g.write(id, 0, `Indice${id}`);
+      g.settle();
+      // Les yeux se rouvrent : seul celui qui devine, et pour cette carte, compte ses moutons.
+      g.sheep(givers[0], c.n, 500);
+      g.sheep(c.guesser, c.n + 1, 500);
+      g.sheep(c.guesser, c.n, count);
+      for (const id of givers) g.ok(id);
+      g.settle();
+      expect(room.viewFor(givers[0]).game!.round.sheep).toBe(0);
+      g.verdict(givers[0], 'found', c.seq);
+      expect(room.viewFor(givers[1]).game!.round.sheep).toBe(count);
+      nights.push([c.guesser, count]);
+      g.next(c.seq);
+    }
+    room.finish(ids[0]);
+    expect(room.final!.sheep).toEqual({ name: room.get(nights[1][0])!.name, count: 31 });
+    room.dispose();
+  });
+
+  it('un compte de moutons farfelu est ramené à la raison', () => {
+    const { game } = setup();
+    const c = game.card!;
+    game.sheep(c.guesser, c.n, 1e9);
+    expect(c.sheep).toBe(999);
+    game.sheep(c.guesser, c.n, -4);
+    expect(c.sheep).toBe(0);
+    game.sheep(c.guesser, c.n, 'beaucoup');
+    expect(c.sheep).toBe(0);
+  });
+
+  it('sans mouton sauté, pas de champion', () => {
+    const { room, ids } = table(4);
+    room.start(ids[0]);
+    const g = room.game!;
+    const c = g.card!;
+    for (const id of c.givers) g.write(id, 0, `Indice${id}`);
+    g.settle();
+    for (const id of c.givers) g.ok(id);
+    g.settle();
+    g.verdict(c.givers[0], 'found', c.seq);
+    room.finish(ids[0]);
+    expect(room.final!.sheep).toBeNull();
+    room.dispose();
+  });
+
   it('terminer sans carte jouée ramène au salon, avec un score sinon', () => {
     const { room, ids } = table(3);
     room.start(ids[0]);

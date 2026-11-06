@@ -1,6 +1,6 @@
 // Fin de partie : le score sur le grand tableau, le clin d'œil, puis toutes les cartes de la partie.
 import confetti from 'canvas-confetti';
-import { Check, Forward, HeartHandshake, LogOut, RotateCcw, Settings2, Sparkles, X } from 'lucide-react';
+import { Check, Forward, HeartHandshake, LogOut, Moon, RotateCcw, Settings2, Sparkles, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { MARKERS, MIN_PLAYERS, tierFor, type CardRecap, type Outcome, type RoomView } from '../../../shared/protocol';
 import { Button, markerVar } from '../components/Ui';
@@ -75,7 +75,7 @@ export function Final({ view }: { view: RoomView }) {
           <p className="score-line">{tier.line}</p>
         </section>
 
-        {(f.soulmates || f.solo) && (
+        {(f.soulmates || f.solo || f.sheep) && (
           <div className="facts">
             {f.soulmates && (
               <p className="fact">
@@ -90,6 +90,14 @@ export function Final({ view }: { view: RoomView }) {
                 <Sparkles size={20} aria-hidden />
                 <span>
                   <b>Le coup de maître :</b> « {f.solo} » trouvé avec un seul indice.
+                </span>
+              </p>
+            )}
+            {f.sheep && (
+              <p className="fact">
+                <Moon size={20} aria-hidden />
+                <span>
+                  <b>Champion des moutons :</b> {f.sheep.name}, {f.sheep.count} {f.sheep.count > 1 ? 'moutons sautés' : 'mouton sauté'} en une seule nuit.
                 </span>
               </p>
             )}
