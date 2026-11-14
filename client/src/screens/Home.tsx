@@ -1,5 +1,5 @@
 // Accueil : le titre, une petite scène qui montre le principe, un prénom, et on crée ou on rejoint une table.
-import { ArrowRight, BookOpen, House, MessageSquare, LogIn, Plus } from 'lucide-react';
+import { ArrowRight, BookOpen, ChevronRight, GraduationCap, House, MessageSquare, LogIn, Plus } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Easel, Logo } from '../components/Ui';
 import { cls, reducedMotion, useThemeColor } from '../lib/util';
@@ -51,6 +51,7 @@ export function Home() {
   const profile = useStore((s) => s.profile);
   const setProfile = useStore((s) => s.setProfile);
   const setRulesOpen = useStore((s) => s.setRulesOpen);
+  const setTutorialOpen = useStore((s) => s.setTutorialOpen);
   const conn = useStore((s) => s.conn);
   const [invited, setInvited] = useState(codeFromUrl);
   const [code, setCode] = useState('');
@@ -99,6 +100,16 @@ export function Home() {
             <Logo size="lg" />
             <p className="tagline">Un mot à faire deviner. Un indice chacun. Sans avoir la même idée que les autres.</p>
             <Demo />
+            <button type="button" className="learn-card" onClick={() => setTutorialOpen(true)}>
+              <span className="learn-icon">
+                <GraduationCap size={26} aria-hidden />
+              </span>
+              <span className="learn-text">
+                <b>Jamais joué&nbsp;? Apprends en 3&nbsp;minutes</b>
+                <small>Deux cartes avec Léo, Inès et Sam&nbsp;: tu écris un indice, puis tu devines.</small>
+              </span>
+              <ChevronRight size={22} className="learn-go" aria-hidden />
+            </button>
           </header>
 
           <section className="home-panel">

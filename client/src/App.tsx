@@ -1,5 +1,6 @@
 import { WifiOff } from 'lucide-react';
 import { RulesModal } from './components/Rules';
+import { Tutorial } from './components/Tutorial';
 import { Final } from './screens/Final';
 import { Home } from './screens/Home';
 import { Lobby } from './screens/Lobby';
@@ -16,6 +17,7 @@ export function App() {
     <>
       {!view ? <Home /> : view.phase === 'lobby' ? <Lobby view={view} /> : view.phase === 'finished' ? <Final view={view} /> : view.game ? <Table view={view} /> : <Lobby view={view} />}
       <RulesModal />
+      <Tutorial />
       {view && conn !== 'online' && everConnected && (
         <div className="conn-banner" role="status">
           <WifiOff size={16} /> Connexion perdue : reconnexion en cours…

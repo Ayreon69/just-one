@@ -1,11 +1,12 @@
 // Les règles, lisibles en une minute et consultables à tout moment.
-import { Ban, EyeOff, MessageCircle, PenLine, Sparkles } from 'lucide-react';
+import { Ban, EyeOff, GraduationCap, MessageCircle, PenLine, Sparkles } from 'lucide-react';
 import { useStore } from '../store';
-import { Easel, Modal } from './Ui';
+import { Button, Easel, Modal } from './Ui';
 
 export function RulesModal() {
   const open = useStore((s) => s.rulesOpen);
   const setOpen = useStore((s) => s.setRulesOpen);
+  const setTutorial = useStore((s) => s.setTutorialOpen);
   return (
     <Modal open={open} onClose={() => setOpen(false)} title="Les règles" wide>
       <div className="rules">
@@ -87,6 +88,10 @@ export function RulesModal() {
             <b>Le score, c'est le nombre de cartes gagnées.</b> Une partie compte 13 cartes : 7 ou 8, c'est dans la moyenne ; 11, c'est excellent ; 13, c'est parfait.
           </p>
         </section>
+
+        <Button className="rule-try" icon={<GraduationCap size={18} />} onClick={() => (setOpen(false), setTutorial(true))}>
+          Essayer en 3 minutes, avec Léo, Inès et Sam
+        </Button>
       </div>
     </Modal>
   );

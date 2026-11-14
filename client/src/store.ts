@@ -52,6 +52,7 @@ interface State {
   emotes: Emote[];
   toast: Toast | null;
   rulesOpen: boolean;
+  tutorialOpen: boolean;
   setConn: (c: State['conn']) => void;
   setView: (v: RoomView | null) => void;
   setSession: (s: Session | null) => void;
@@ -60,6 +61,7 @@ interface State {
   pushEmote: (e: Omit<Emote, 'id'>) => void;
   showToast: (text: string, tone?: Toast['tone']) => void;
   setRulesOpen: (open: boolean) => void;
+  setTutorialOpen: (open: boolean) => void;
 }
 
 let seq = 0;
@@ -78,6 +80,7 @@ export const useStore = create<State>((set, get) => ({
   emotes: [],
   toast: null,
   rulesOpen: false,
+  tutorialOpen: false,
   setConn: (conn) => set((s) => ({ conn, everConnected: s.everConnected || conn === 'online' })),
   setView: (view) => set({ view, clockOffset: view ? view.serverNow - Date.now() : get().clockOffset }),
   setSession: (session) => {
@@ -107,6 +110,7 @@ export const useStore = create<State>((set, get) => ({
     }, 3600);
   },
   setRulesOpen: (rulesOpen) => set({ rulesOpen }),
+  setTutorialOpen: (tutorialOpen) => set({ tutorialOpen }),
 }));
 
 /** Heure du serveur estimée côté client (pour les comptes à rebours). */

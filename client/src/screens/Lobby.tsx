@@ -1,5 +1,5 @@
 // Salon : on invite, on voit qui est là, et on lance. Les réglages sont bons d'office : ils restent repliés.
-import { BookOpen, Check, ChevronDown, Copy, Crown, LogOut, Play, QrCode, Share2, UserX } from 'lucide-react';
+import { BookOpen, Check, ChevronDown, Copy, Crown, GraduationCap, LogOut, Play, QrCode, Share2, UserX } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
 import { CARD_OPTIONS, MAX_PLAYERS, MIN_PLAYERS, THEMES, THEME_IDS, TIMER_OPTIONS, type AnswerMode, type CardSetting, type PlayerView, type RoomView, type ThemeId, type TimerSetting } from '../../../shared/protocol';
@@ -42,6 +42,7 @@ function PlayerRow({ p, view }: { p: PlayerView; view: RoomView }) {
 export function Lobby({ view }: { view: RoomView }) {
   useThemeColor('#2346f5');
   const setRulesOpen = useStore((s) => s.setRulesOpen);
+  const setTutorialOpen = useStore((s) => s.setTutorialOpen);
   const isHost = view.hostId === view.me;
   const seated = view.players.filter((p) => p.status !== 'spectator');
   const spectators = view.players.filter((p) => p.status === 'spectator');
@@ -197,9 +198,14 @@ export function Lobby({ view }: { view: RoomView }) {
             </div>
           )}
         </div>
-        <Button variant="ghost" className="on-color" icon={<BookOpen size={18} />} onClick={() => setRulesOpen(true)}>
-          Les règles en 1 minute
-        </Button>
+        <div className="lobby-help">
+          <Button variant="ghost" className="on-color" icon={<GraduationCap size={18} />} onClick={() => setTutorialOpen(true)}>
+            Partie d’essai
+          </Button>
+          <Button variant="ghost" className="on-color" icon={<BookOpen size={18} />} onClick={() => setRulesOpen(true)}>
+            Les règles en 1 minute
+          </Button>
+        </div>
 
         <Modal open={qr} onClose={() => setQr(false)} title={`Table ${view.code}`}>
           <div className="qr-box">
